@@ -5,8 +5,8 @@ import { Track } from './entities/track.entity';
 
 export const AppDataSource = new DataSource({
   type: 'sqlite',
-  database: 'database.sqlite',
+  database: process.env.DATABASE_PATH || 'database.sqlite',
   entities: [User, Playlist, Track],
-  migrations: ['dist/migrations/*.js'],
+  migrations: [__dirname + '/migrations/*.js'],
   synchronize: false,
 });

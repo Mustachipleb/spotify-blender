@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { getAppConfig } from "../config";
 import type { Track } from "../types/spotify";
 import { TrackGrid } from "../components/TrackGrid";
 import { Section } from "../components/Section";
@@ -18,7 +19,7 @@ export default function BlacklistPage() {
     }
 
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4010";
+      const backendUrl = getAppConfig().BACKEND_URL;
       const response = await fetch(`${backendUrl}/blacklist`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -61,7 +62,7 @@ export default function BlacklistPage() {
     if (!token) return;
 
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4010";
+      const backendUrl = getAppConfig().BACKEND_URL;
       const response = await fetch(`${backendUrl}/blacklist/${track.id}`, {
         method: "DELETE",
         headers: {

@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "4010:4010"
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=4010
+      - TZ=Europe/Brussels
+      - DATABASE_PATH=/app/data/database.sqlite
+      - FRONTEND_CALLBACK_URL=http://127.0.0.1:3000/auth/callback
+      - TARGET_PLAYLIST_ID=${TARGET_PLAYLIST_ID:-1pJO26tWnsZRAfVl1hT5Dp}
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - AUTH_CODE_REDIRECT_URL=http://127.0.0.1:4010/callback
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://127.0.0.1:4010
+    depends_on:
+      - backend
+    restart: unless-stopped

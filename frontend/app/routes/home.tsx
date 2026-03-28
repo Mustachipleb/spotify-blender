@@ -1,6 +1,7 @@
 import type { Route } from "./+types/home";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { getAppConfig } from "../config";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -21,9 +22,7 @@ export default function Home() {
     setIsLoggedIn(false);
   };
 
-  const loginUrl = import.meta.env.VITE_BACKEND_URL
-    ? `${import.meta.env.VITE_BACKEND_URL}/login`
-    : "http://localhost:4010/login";
+  const loginUrl = `${getAppConfig().BACKEND_URL}/login`;
 
   return (
     <main className="flex items-center justify-center min-h-screen">

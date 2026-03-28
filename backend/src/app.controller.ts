@@ -94,7 +94,7 @@ export class AppController {
 
     const frontendUrl =
       this.configService.get('FRONTEND_CALLBACK_URL') ||
-      'http://localhost:5173/auth/callback';
+      'http://127.0.0.1:5173/auth/callback';
     const query = querystring.stringify({
       access_token: data.access_token,
       refresh_token: data.refresh_token,

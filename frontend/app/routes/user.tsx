@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { getAppConfig } from "../config";
 import type { Track } from "../types/spotify";
 import { TrackGrid } from "../components/TrackGrid";
 import { Section } from "../components/Section";
@@ -30,7 +31,7 @@ export default function UserPage() {
           Authorization: `Bearer ${token}`,
         };
 
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4010";
+        const backendUrl = getAppConfig().BACKEND_URL;
 
         const [topTracksRes, playlistRes, blacklistRes] = await Promise.all([
           fetch("https://api.spotify.com/v1/me/top/tracks", { headers }),
@@ -112,7 +113,7 @@ export default function UserPage() {
     if (!token) return;
 
     const isBlacklisted = blacklistedIds.has(track.id);
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4010";
+    const backendUrl = getAppConfig().BACKEND_URL;
 
     try {
       if (isBlacklisted) {
