@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -10,13 +10,18 @@ import { Track } from './entities/track.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
+      isGlobal: true,
       expandVariables: true,
     }),
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'database.sqlite',
-      entities: [User, Playlist, Track],
-      synchronize: true, // Only for development!
+    TypeOrmModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        type: 'sqlite',
+        database: 'database.sqlite',
+        entities: [User, Playlist, Track],
+        synchronize: configService.getOrThrow('NODE_ENV') === 'development',
+        migrations: ['dist/migrations/*.js'],
+      }),
+      inject: [ConfigService],
     }),
     HttpModule,
   ],
