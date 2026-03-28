@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { SpotifyService } from './spotify.service';
@@ -8,13 +9,17 @@ import { SpotifyService } from './spotify.service';
 @Injectable()
 export class CronService {
   private readonly logger = new Logger(CronService.name);
-  private readonly TARGET_PLAYLIST_ID = '1pJO26tWnsZRAfVl1hT5Dp';
+  private readonly TARGET_PLAYLIST_ID: string;
 
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly spotifyService: SpotifyService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.TARGET_PLAYLIST_ID =
+      this.configService.get('TARGET_PLAYLIST_ID') || '1pJO26tWnsZRAfVl1hT5Dp';
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
     timeZone: process.env.TZ || 'UTC',

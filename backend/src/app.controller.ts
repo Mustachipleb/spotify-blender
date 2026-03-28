@@ -92,7 +92,9 @@ export class AppController {
 
     await this.userRepository.save(user);
 
-    const frontendUrl = 'http://localhost:5173/auth/callback'; // Default vite port for RR
+    const frontendUrl =
+      this.configService.get('FRONTEND_CALLBACK_URL') ||
+      'http://localhost:5173/auth/callback';
     const query = querystring.stringify({
       access_token: data.access_token,
       refresh_token: data.refresh_token,

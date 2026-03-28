@@ -30,10 +30,12 @@ export default function UserPage() {
           Authorization: `Bearer ${token}`,
         };
 
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4010";
+
         const [topTracksRes, playlistRes, blacklistRes] = await Promise.all([
           fetch("https://api.spotify.com/v1/me/top/tracks", { headers }),
           fetch(`https://api.spotify.com/v1/playlists/${PLAYLIST_ID}/tracks`, { headers }),
-          fetch("http://localhost:4010/blacklist", { headers }),
+          fetch(`${backendUrl}/blacklist`, { headers }),
         ]);
 
         if (topTracksRes.status === 401 || playlistRes.status === 401 || blacklistRes.status === 401) {
@@ -110,10 +112,11 @@ export default function UserPage() {
     if (!token) return;
 
     const isBlacklisted = blacklistedIds.has(track.id);
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4010";
 
     try {
       if (isBlacklisted) {
-        const response = await fetch(`http://localhost:4010/blacklist/${track.id}`, {
+        const response = await fetch(`${backendUrl}/blacklist/${track.id}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -124,7 +127,7 @@ export default function UserPage() {
           return next;
         });
       } else {
-        const response = await fetch("http://localhost:4010/blacklist", {
+        const response = await fetch(`${backendUrl}/blacklist`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

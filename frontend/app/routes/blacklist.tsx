@@ -18,7 +18,8 @@ export default function BlacklistPage() {
     }
 
     try {
-      const response = await fetch("http://localhost:4010/blacklist", {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4010";
+      const response = await fetch(`${backendUrl}/blacklist`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -60,7 +61,8 @@ export default function BlacklistPage() {
     if (!token) return;
 
     try {
-      const response = await fetch(`http://localhost:4010/blacklist/${track.id}`, {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4010";
+      const response = await fetch(`${backendUrl}/blacklist/${track.id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

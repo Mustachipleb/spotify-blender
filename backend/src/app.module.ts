@@ -19,9 +19,9 @@ import { SpotifyService } from './spotify.service';
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         type: 'sqlite',
-        database: 'database.sqlite',
+        database: configService.get('DATABASE_PATH') || 'database.sqlite',
         entities: [User, Playlist, Track],
-        synchronize: configService.getOrThrow('NODE_ENV') === 'development',
+        synchronize: configService.get('NODE_ENV') === 'development',
         migrations: ['dist/migrations/*.js'],
       }),
       inject: [ConfigService],

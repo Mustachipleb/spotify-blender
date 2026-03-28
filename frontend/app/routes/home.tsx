@@ -21,6 +21,10 @@ export default function Home() {
     setIsLoggedIn(false);
   };
 
+  const loginUrl = import.meta.env.VITE_BACKEND_URL
+    ? `${import.meta.env.VITE_BACKEND_URL}/login`
+    : "http://localhost:4010/login";
+
   return (
     <main className="flex items-center justify-center min-h-screen">
       <div className="text-center">
@@ -43,7 +47,7 @@ export default function Home() {
             </>
           ) : (
             <a
-              href="http://localhost:4010/login"
+              href={loginUrl}
               className="px-6 py-3 bg-[#1DB954] text-white rounded-full font-semibold hover:bg-[#1ed760] transition-colors"
             >
               Log in with Spotify
