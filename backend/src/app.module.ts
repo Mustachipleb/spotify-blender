@@ -6,6 +6,8 @@ import { HttpModule } from '@nestjs/axios';
 import { User } from './entities/user.entity';
 import { Playlist } from './entities/playlist.entity';
 import { Track } from './entities/track.entity';
+import { CronService } from './cron.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -23,9 +25,11 @@ import { Track } from './entities/track.entity';
       }),
       inject: [ConfigService],
     }),
+    TypeOrmModule.forFeature([User, Playlist, Track]),
     HttpModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [CronService],
 })
 export class AppModule {}

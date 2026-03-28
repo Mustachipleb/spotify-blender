@@ -12,6 +12,9 @@ import type { HttpRedirectResponse } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import type { AxiosResponse } from 'axios';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
+import { Repository } from 'typeorm';
 
 @Controller()
 export class AppController {
@@ -23,6 +26,8 @@ export class AppController {
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {
     this.client_id = this.configService.getOrThrow('SPOTIFY_CLIENT_ID');
     this.client_secret = this.configService.getOrThrow('SPOTIFY_CLIENT_SECRET');
@@ -109,6 +114,44 @@ export class AppController {
     }
 
     const data = response.data;
+
+    // Fetch user info from Spotify
+    let userResponse: AxiosResponse<{
+      id: string;
+      email: string;
+      display_name: string;
+    }>;
+    try {
+      userResponse = await lastValueFrom(
+        this.httpService.get('https://api.spotify.com/v1/me', {
+          headers: {
+            Authorization: `Bearer ${data.access_token}`,
+          },
+        }),
+      );
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('Failed to fetch user data');
+    }
+
+    const userData = userResponse.data;
+
+    // Upsert user in the database
+    let user = await this.userRepository.findOne({
+      where: { spotifyId: userData.id },
+    });
+
+    if (!user) {
+      user = new User();
+      user.spotifyId = userData.id;
+    }
+
+    user.email = userData.email;
+    user.display_name = userData.display_name;
+    user.refresh_token = data.refresh_token;
+
+    await this.userRepository.save(user);
+
     const frontendUrl = 'http://localhost:5173/auth/callback'; // Default vite port for RR
     const query = querystring.stringify({
       access_token: data.access_token,
