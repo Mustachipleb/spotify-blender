@@ -16,12 +16,16 @@ export class CronService {
     private readonly spotifyService: SpotifyService,
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
+    timeZone: process.env.TZ || 'UTC',
+  })
   async handleCron() {
     this.logger.log('Starting automated playlist update...');
 
     try {
-      const users = await this.userRepository.find();
+      const users = await this.userRepository.find({
+        relations: ['blacklist'],
+      });
       if (users.length === 0) {
         this.logger.warn('No users found in database. Skipping.');
         return;
@@ -33,6 +37,11 @@ export class CronService {
         { count: number; totalPosition: number }
       >();
       let playlistOwnerToken: string | null = null;
+
+      const allBlacklistedUris = new Set<string>();
+      for (const user of users) {
+        user.blacklist.forEach((t) => allBlacklistedUris.add(t.uri));
+      }
 
       for (const user of users) {
         try {
@@ -49,10 +58,16 @@ export class CronService {
 
           const topTracks = await this.spotifyService.getTopTracks(
             accessToken,
-            10,
+            25,
           );
 
           topTracks.items.forEach((track, index) => {
+            if (allBlacklistedUris.has(track.uri)) {
+              this.logger.log(
+                `Skipping track ${track.name} - it is blacklisted by at least one user.`,
+              );
+              return;
+            }
             const current = trackMap.get(track.uri) || {
               count: 0,
               totalPosition: 0,

@@ -1,15 +1,22 @@
 import {
   BadRequestException,
+  Body,
   Controller,
+  Delete,
   Get,
+  Headers,
+  Param,
+  Post,
   Query,
   Redirect,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as querystring from 'node:querystring';
 import type { HttpRedirectResponse } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
+import { Track } from './entities/track.entity';
 import { Repository } from 'typeorm';
 import { SpotifyService } from './spotify.service';
 
@@ -22,6 +29,8 @@ export class AppController {
     private readonly spotifyService: SpotifyService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Track)
+    private readonly trackRepository: Repository<Track>,
   ) {}
 
   @Get('/login')
@@ -94,5 +103,74 @@ export class AppController {
       url: `${frontendUrl}?${query}`,
       statusCode: 302,
     };
+  }
+
+  @Get('/blacklist')
+  async getBlacklist(@Headers('authorization') auth: string) {
+    const token = auth?.replace('Bearer ', '');
+    if (!token) throw new UnauthorizedException();
+    const userData = await this.spotifyService.getUserInfo(token);
+    const user = await this.userRepository.findOne({
+      where: { spotifyId: userData.id },
+      relations: ['blacklist'],
+    });
+    return user?.blacklist || [];
+  }
+
+  @Post('/blacklist')
+  async addToBlacklist(
+    @Headers('authorization') auth: string,
+    @Body()
+    trackData: {
+      spotifyId: string;
+      name: string;
+      uri: string;
+      artists: string;
+      albumName: string;
+      albumImageUrl: string;
+      externalUrl: string;
+    },
+  ) {
+    const token = auth?.replace('Bearer ', '');
+    if (!token) throw new UnauthorizedException();
+    const userData = await this.spotifyService.getUserInfo(token);
+    const user = await this.userRepository.findOne({
+      where: { spotifyId: userData.id },
+      relations: ['blacklist'],
+    });
+    if (!user) throw new BadRequestException('User not found');
+
+    let track = await this.trackRepository.findOne({
+      where: { spotifyId: trackData.spotifyId },
+    });
+    if (!track) {
+      track = this.trackRepository.create(trackData);
+      await this.trackRepository.save(track);
+    }
+
+    if (!user.blacklist.find((t) => t.spotifyId === track.spotifyId)) {
+      user.blacklist.push(track);
+      await this.userRepository.save(user);
+    }
+    return user.blacklist;
+  }
+
+  @Delete('/blacklist/:spotifyId')
+  async removeFromBlacklist(
+    @Headers('authorization') auth: string,
+    @Param('spotifyId') spotifyId: string,
+  ) {
+    const token = auth?.replace('Bearer ', '');
+    if (!token) throw new UnauthorizedException();
+    const userData = await this.spotifyService.getUserInfo(token);
+    const user = await this.userRepository.findOne({
+      where: { spotifyId: userData.id },
+      relations: ['blacklist'],
+    });
+    if (!user) throw new BadRequestException('User not found');
+
+    user.blacklist = user.blacklist.filter((t) => t.spotifyId !== spotifyId);
+    await this.userRepository.save(user);
+    return user.blacklist;
   }
 }
