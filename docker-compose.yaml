@@ -12,7 +12,7 @@ services:
       - PORT=4010
       - TZ=Europe/Brussels
       - DATABASE_PATH=/app/data/database.sqlite
-      - FRONTEND_CALLBACK_URL=http://127.0.0.1:3000/auth/callback
+      - FRONTEND_URL=http://127.0.0.1:3000
       - TARGET_PLAYLIST_ID=${TARGET_PLAYLIST_ID:-1pJO26tWnsZRAfVl1hT5Dp}
       - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
       - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
