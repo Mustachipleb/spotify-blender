@@ -1,0 +1,14 @@
+{
+  "name": "spotify-blender",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "workspaces": [
+    "./frontend",
+    "./backend"
+  ]
+}
