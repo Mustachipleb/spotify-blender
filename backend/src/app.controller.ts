@@ -42,7 +42,8 @@ export class AppController {
         querystring.stringify({
           response_type: 'code',
           client_id: this.configService.getOrThrow('SPOTIFY_CLIENT_ID'),
-          scope: 'user-read-private user-read-email user-top-read',
+          scope:
+            'user-read-private user-read-email user-top-read playlist-modify-public playlist-modify-private',
           redirect_uri: this.configService.getOrThrow('AUTH_CODE_REDIRECT_URL'),
           state: state,
         }),

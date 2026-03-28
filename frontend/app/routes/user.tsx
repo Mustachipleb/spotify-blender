@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 
 interface Track {
   id: string;
+  uri: string;
   name: string;
   artists: { name: string }[];
   album: {
@@ -17,7 +18,10 @@ export default function UserPage() {
   const [topTracks, setTopTracks] = useState<Track[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const PLAYLIST_ID = "4oqtLpfSdiagaoix6U94qm"; //"1pJO26tWnsZRAfVl1hT5Dp";
 
   useEffect(() => {
     const token = sessionStorage.getItem("access_token");
@@ -56,6 +60,38 @@ export default function UserPage() {
     fetchTopTracks();
   }, [navigate]);
 
+  const addToPlaylist = async (trackUri: string, trackName: string) => {
+    if (!accessToken) return;
+
+    try {
+      const response = await fetch(
+        `https://api.spotify.com/v1/playlists/${PLAYLIST_ID}/items`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            uris: [trackUri],
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || "Failed to add track to playlist");
+      }
+
+      setStatusMessage(`Successfully added "${trackName}" to the playlist!`);
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (err) {
+      console.error(err);
+      setStatusMessage(err instanceof Error ? `Error: ${err.message}` : "Failed to add track to playlist");
+      setTimeout(() => setStatusMessage(null), 5000);
+    }
+  };
+
   const handleLogout = () => {
     sessionStorage.clear();
     navigate("/");
@@ -73,6 +109,12 @@ export default function UserPage() {
         </button>
       </div>
 
+      {statusMessage && (
+        <div className={`mb-4 p-4 rounded ${statusMessage.startsWith("Error") ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+          {statusMessage}
+        </div>
+      )}
+
       {loading && <p>Loading your top tracks...</p>}
       {error && <p className="text-red-500">Error: {error}</p>}
 
@@ -85,19 +127,25 @@ export default function UserPage() {
                 alt={track.album.name}
                 className="w-20 h-20 rounded shadow"
               />
-              <div className="flex flex-col justify-center">
+              <div className="flex flex-col flex-1 justify-center min-w-0">
                 <a
                   href={track.external_urls.spotify}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-bold text-lg hover:underline text-blue-600 dark:text-blue-400"
+                  className="font-bold text-lg hover:underline text-blue-600 dark:text-blue-400 truncate"
                 >
                   {track.name}
                 </a>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-600 dark:text-gray-400 truncate">
                   {track.artists.map((a) => a.name).join(", ")}
                 </p>
-                <p className="text-sm text-gray-500 italic">{track.album.name}</p>
+                <p className="text-sm text-gray-500 italic truncate mb-2">{track.album.name}</p>
+                <button
+                  onClick={() => addToPlaylist(track.uri, track.name)}
+                  className="w-fit px-3 py-1 text-xs bg-[#1DB954] text-white rounded-full font-semibold hover:bg-[#1ed760] transition-colors"
+                >
+                  Add to Playlist
+                </button>
               </div>
             </div>
           ))}
