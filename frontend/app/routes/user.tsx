@@ -1,17 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-
-interface Track {
-  id: string;
-  uri: string;
-  name: string;
-  artists: { name: string }[];
-  album: {
-    name: string;
-    images: { url: string }[];
-  };
-  external_urls: { spotify: string };
-}
+import type { Track } from "../types/spotify";
+import { TrackGrid } from "../components/TrackGrid";
+import { Section } from "../components/Section";
 
 export default function UserPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -137,73 +128,17 @@ export default function UserPage() {
 
       {!loading && !error && (
         <div className="space-y-12">
-          <section>
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Your Top Tracks</h2>
-            <div className="grid gap-6 md:grid-cols-2">
-              {topTracks.map((track) => (
-                <div key={track.id} className="flex gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-                  <img
-                    src={track.album.images[0]?.url}
-                    alt={track.album.name}
-                    className="w-20 h-20 rounded shadow"
-                  />
-                  <div className="flex flex-col flex-1 justify-center min-w-0">
-                    <a
-                      href={track.external_urls.spotify}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-bold text-lg hover:underline text-blue-600 dark:text-blue-400 truncate"
-                    >
-                      {track.name}
-                    </a>
-                    <p className="text-gray-600 dark:text-gray-400 truncate">
-                      {track.artists.map((a) => a.name).join(", ")}
-                    </p>
-                    <p className="text-sm text-gray-500 italic truncate mb-2">{track.album.name}</p>
-                    <button
-                      onClick={() => addToPlaylist(track.uri, track.name)}
-                      className="w-fit px-3 py-1 text-xs bg-[#1DB954] text-white rounded-full font-semibold hover:bg-[#1ed760] transition-colors"
-                    >
-                      Add to Playlist
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+          <Section title="Your Top Tracks">
+            <TrackGrid tracks={topTracks} onAdd={addToPlaylist} showAddButton />
+          </Section>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200 border-t pt-8">Current Playlist Content</h2>
+          <Section title="Current Playlist Content" titleClassName="border-t pt-8">
             {playlistTracks.length === 0 ? (
               <p className="text-gray-500 italic">The playlist is currently empty.</p>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2">
-                {playlistTracks.map((track, index) => (
-                  <div key={`${track.id}-${index}`} className="flex gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-                    <img
-                      src={track.album.images[0]?.url}
-                      alt={track.album.name}
-                      className="w-20 h-20 rounded shadow"
-                    />
-                    <div className="flex flex-col flex-1 justify-center min-w-0">
-                      <a
-                        href={track.external_urls.spotify}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-bold text-lg hover:underline text-blue-600 dark:text-blue-400 truncate"
-                      >
-                        {track.name}
-                      </a>
-                      <p className="text-gray-600 dark:text-gray-400 truncate">
-                        {track.artists.map((a) => a.name).join(", ")}
-                      </p>
-                      <p className="text-sm text-gray-500 italic truncate">{track.album.name}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <TrackGrid tracks={playlistTracks} />
             )}
-          </section>
+          </Section>
         </div>
       )}
 
