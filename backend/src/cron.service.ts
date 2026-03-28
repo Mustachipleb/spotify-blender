@@ -27,7 +27,11 @@ export class CronService {
         return;
       }
 
-      const allTracksUris = new Set<string>();
+      // uri -> { count, totalPosition }
+      const trackMap = new Map<
+        string,
+        { count: number; totalPosition: number }
+      >();
       let playlistOwnerToken: string | null = null;
 
       for (const user of users) {
@@ -39,7 +43,6 @@ export class CronService {
           const accessToken = tokenData.access_token;
 
           // We'll use the first user we successfully refresh as the "executor" for the playlist update
-          // In a real app, we might want to ensure this user has permissions for the specific playlist
           if (!playlistOwnerToken) {
             playlistOwnerToken = accessToken;
           }
@@ -48,8 +51,16 @@ export class CronService {
             accessToken,
             10,
           );
-          topTracks.items.forEach((track) => {
-            allTracksUris.add(track.uri);
+
+          topTracks.items.forEach((track, index) => {
+            const current = trackMap.get(track.uri) || {
+              count: 0,
+              totalPosition: 0,
+            };
+            trackMap.set(track.uri, {
+              count: current.count + 1,
+              totalPosition: current.totalPosition + index,
+            });
           });
         } catch (error) {
           this.logger.error(
@@ -58,15 +69,28 @@ export class CronService {
         }
       }
 
-      if (allTracksUris.size > 0 && playlistOwnerToken) {
+      if (trackMap.size > 0 && playlistOwnerToken) {
         this.logger.log(
-          `Updating playlist with ${allTracksUris.size} unique tracks.`,
+          `Updating playlist with ${trackMap.size} unique tracks.`,
         );
+
+        // Sort:
+        // 1. By occurrence count (descending)
+        // 2. By total position in top lists (ascending)
+        const sortedTracks = Array.from(trackMap.entries())
+          .sort((a, b) => {
+            if (b[1].count !== a[1].count) {
+              return b[1].count - a[1].count;
+            }
+            return a[1].totalPosition - b[1].totalPosition;
+          })
+          .map(([uri]) => uri);
+
         // Clear and replace playlist tracks
         await this.spotifyService.replacePlaylistTracks(
           playlistOwnerToken,
           this.TARGET_PLAYLIST_ID,
-          Array.from(allTracksUris),
+          sortedTracks,
         );
         this.logger.log('Playlist updated successfully.');
       } else {
