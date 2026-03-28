@@ -8,6 +8,7 @@ import { Playlist } from './entities/playlist.entity';
 import { Track } from './entities/track.entity';
 import { CronService } from './cron.service';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SpotifyService } from './spotify.service';
 
 @Module({
   imports: [
@@ -30,6 +31,6 @@ import { ScheduleModule } from '@nestjs/schedule';
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
-  providers: [CronService],
+  providers: [CronService, SpotifyService],
 })
 export class AppModule {}
