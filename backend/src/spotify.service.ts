@@ -123,4 +123,87 @@ export class SpotifyService {
       throw new InternalServerErrorException('Failed to fetch user data');
     }
   }
+
+  async getTopTracks(
+    accessToken: string,
+    limit: number = 10,
+  ): Promise<{ items: any[] }> {
+    try {
+      const response: AxiosResponse = await lastValueFrom(
+        this.httpService.get('https://api.spotify.com/v1/me/top/tracks', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          params: {
+            limit: limit,
+          },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        'Failed to fetch top tracks:',
+        error.response?.data || error.message,
+      );
+      throw new InternalServerErrorException('Failed to fetch top tracks');
+    }
+  }
+
+  async replacePlaylistTracks(
+    accessToken: string,
+    playlistId: string,
+    uris: string[],
+  ): Promise<void> {
+    try {
+      await lastValueFrom(
+        this.httpService.put(
+          `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+          { uris },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+    } catch (error) {
+      console.error(
+        'Failed to replace playlist tracks:',
+        error.response?.data || error.message,
+      );
+      throw new InternalServerErrorException(
+        'Failed to replace playlist tracks',
+      );
+    }
+  }
+
+  async addTracksToPlaylist(
+    accessToken: string,
+    playlistId: string,
+    uris: string[],
+  ): Promise<void> {
+    try {
+      await lastValueFrom(
+        this.httpService.post(
+          `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+          { uris },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+    } catch (error) {
+      console.error(
+        'Failed to add tracks to playlist:',
+        error.response?.data || error.message,
+      );
+      throw new InternalServerErrorException(
+        'Failed to add tracks to playlist',
+      );
+    }
+  }
 }
