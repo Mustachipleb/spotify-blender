@@ -19,6 +19,7 @@ import { User } from './entities/user.entity';
 import { Track } from './entities/track.entity';
 import { Repository } from 'typeorm';
 import { SpotifyService } from './spotify.service';
+import { CronService } from './cron.service';
 
 @Controller()
 export class AppController {
@@ -27,6 +28,7 @@ export class AppController {
   constructor(
     private readonly configService: ConfigService,
     private readonly spotifyService: SpotifyService,
+    private readonly cronService: CronService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Track)
@@ -173,5 +175,43 @@ export class AppController {
     user.blacklist = user.blacklist.filter((t) => t.spotifyId !== spotifyId);
     await this.userRepository.save(user);
     return user.blacklist;
+  }
+
+  @Get('/admin/users')
+  async getUsers(@Headers('authorization') auth: string) {
+    await this.checkAdmin(auth);
+    const users = await this.userRepository.find({ relations: ['blacklist'] });
+    return users.map((user) => ({
+      spotifyId: user.spotifyId,
+      display_name: user.display_name,
+      email: user.email,
+      blacklistCount: user.blacklist.length,
+    }));
+  }
+
+  @Post('/admin/trigger-cron')
+  async triggerCron(@Headers('authorization') auth: string) {
+    await this.checkAdmin(auth);
+    await this.cronService.handleCron();
+    return { status: 'success' };
+  }
+
+  @Get('/admin/check')
+  async checkAdminStatus(@Headers('authorization') auth: string) {
+    try {
+      await this.checkAdmin(auth);
+      return { isAdmin: true };
+    } catch (error) {
+      return { isAdmin: false };
+    }
+  }
+
+  private async checkAdmin(auth: string) {
+    const token = auth?.replace('Bearer ', '');
+    if (!token) throw new UnauthorizedException();
+    const userData = await this.spotifyService.getUserInfo(token);
+    if (userData.id !== this.configService.getOrThrow('ADMIN_SPOTIFY_ID')) {
+      throw new UnauthorizedException('Forbidden');
+    }
   }
 }

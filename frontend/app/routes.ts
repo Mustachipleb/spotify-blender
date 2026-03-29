@@ -5,4 +5,5 @@ export default [
   route("auth/callback", "routes/auth-callback.tsx"),
   route("user", "routes/user.tsx"),
   route("blacklist", "routes/blacklist.tsx"),
+  route("admin", "routes/admin.tsx"),
 ] satisfies RouteConfig;
