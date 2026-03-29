@@ -19,15 +19,29 @@ async function bootstrap() {
     ].filter(Boolean),
   );
 
-  app.enableCors({
-    origin: [
-      configService.getOrThrow('FRONTEND_URL'),
-      configService.getOrThrow('URL'),
-    ].filter(Boolean),
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type,Accept,Authorization',
-    credentials: true,
-  });
+  if (configService.get('NODE_ENV') === 'development') {
+    app.enableCors();
+  } else {
+    app.enableCors({
+      origin: (
+        origin: string | undefined,
+        callback: (err: Error | null, allow?: boolean) => void,
+      ) => {
+        const allowedOrigins = [
+          configService.getOrThrow('FRONTEND_URL'),
+          configService.getOrThrow('URL'),
+        ].filter(Boolean);
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      allowedHeaders: 'Content-Type,Accept,Authorization',
+      credentials: true,
+    });
+  }
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
