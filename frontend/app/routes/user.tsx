@@ -40,7 +40,7 @@ export default function UserPage() {
         };
 
         const [topTracksRes, playlistRes, blacklistRes] = await Promise.all([
-          fetch("https://api.spotify.com/v1/me/top/tracks", { headers }),
+          fetch("https://api.spotify.com/v1/me/top/tracks?time_range=short_term", { headers }),
           fetch(`https://api.spotify.com/v1/playlists/${PLAYLIST_ID}/tracks`, { headers }),
           fetch(`${backendUrl}/blacklist`, { headers }),
         ]);

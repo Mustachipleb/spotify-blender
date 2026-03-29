@@ -136,6 +136,7 @@ export class SpotifyService {
           },
           params: {
             limit: limit,
+            time_range: 'short_term',
           },
         }),
       );

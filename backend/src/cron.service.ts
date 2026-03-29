@@ -36,10 +36,10 @@ export class CronService {
         return;
       }
 
-      // uri -> { count, totalPosition }
+      // uri -> { count, bestPosition, artistId }
       const trackMap = new Map<
         string,
-        { count: number; totalPosition: number }
+        { count: number; bestPosition: number; artistId: string }
       >();
       let playlistOwnerToken: string | null = null;
 
@@ -75,11 +75,13 @@ export class CronService {
             }
             const current = trackMap.get(track.uri) || {
               count: 0,
-              totalPosition: 0,
+              bestPosition: Infinity,
+              artistId: track.artists[0]?.id || 'unknown',
             };
             trackMap.set(track.uri, {
               count: current.count + 1,
-              totalPosition: current.totalPosition + index,
+              bestPosition: Math.min(current.bestPosition, index),
+              artistId: current.artistId,
             });
           });
         } catch (error) {
@@ -94,23 +96,30 @@ export class CronService {
           `Updating playlist with ${trackMap.size} unique tracks.`,
         );
 
-        // Sort:
+        // Sort strategy:
         // 1. By occurrence count (descending)
-        // 2. By total position in top lists (ascending)
-        const sortedTracks = Array.from(trackMap.entries())
-          .sort((a, b) => {
-            if (b[1].count !== a[1].count) {
-              return b[1].count - a[1].count;
-            }
-            return a[1].totalPosition - b[1].totalPosition;
-          })
-          .map(([uri]) => uri);
+        // 2. By "artist rank" (ascending) - how many tracks of this artist we've already seen in this count tier
+        // 3. By best position in top lists (ascending)
+        const tracksWithData = Array.from(trackMap.entries()).map(
+          ([uri, data]) => ({
+            uri,
+            ...data,
+          }),
+        );
+
+        // First, sort by count and position as a baseline to assign artist ranks
+        tracksWithData.sort((a, b) => {
+          if (b.count !== a.count) return b.count - a.count;
+          return a.bestPosition - b.bestPosition;
+        });
+
+        const sortedTracks = this.sortTracks(tracksWithData, users.length);
 
         // Clear and replace playlist tracks
         await this.spotifyService.replacePlaylistTracks(
           playlistOwnerToken,
           this.TARGET_PLAYLIST_ID,
-          sortedTracks,
+          sortedTracks.map((track) => track.uri),
         );
         this.logger.log('Playlist updated successfully.');
       } else {
@@ -131,5 +140,61 @@ export class CronService {
     } catch (error) {
       this.logger.error(`Cron job failed: ${error.message}`);
     }
+  }
+
+  getTrackScore(count: number, bestPosition: number, userCount: number) {
+    const baseScore = Math.log10(userCount) * 100;
+    const trackUserCountScore = Math.round((count / userCount) * 100);
+
+    // The lower the bestPosition, the higher the score. Maxes out relative to maxPosition
+    const positionFactor = 2 * Math.pow(Math.E, -0.1 * bestPosition);
+
+    return (baseScore + trackUserCountScore) * positionFactor;
+  }
+
+  sortTracks(
+    tracks: {
+      uri: string;
+      count: number;
+      bestPosition: number;
+      artistId: string;
+    }[],
+    userCount: number,
+  ) {
+    const initialSet = tracks
+      .map((t) => ({
+        ...t,
+        score: this.getTrackScore(t.count, t.bestPosition, userCount),
+      }))
+      .toSorted((a, b) => b.score - a.score);
+
+    const previousTracks: {
+      uri: string;
+      count: number;
+      bestPosition: number;
+      artistId: string;
+    }[] = [];
+    for (const track of initialSet) {
+      if (previousTracks.length === 0) {
+        previousTracks.push(track);
+        continue;
+      }
+
+      const previousTrack = previousTracks[previousTracks.length - 1];
+      const hasNextTrack = previousTracks.length < initialSet.length - 1;
+      if (hasNextTrack && previousTrack.artistId === track.artistId) {
+        const nextTrack = initialSet[previousTracks.length + 1];
+        track.score = nextTrack.score * 0.9;
+      }
+
+      if (previousTracks.some((t) => t.artistId === track.artistId)) {
+        const amountOfSameArtists = previousTracks.filter(
+          (t) => t.artistId === track.artistId,
+        ).length;
+        track.score = track.score * Math.pow(0.8, amountOfSameArtists);
+      }
+    }
+
+    return initialSet.toSorted((a, b) => b.score - a.score);
   }
 }
