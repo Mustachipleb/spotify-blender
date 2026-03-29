@@ -19,9 +19,10 @@ async function bootstrap() {
     ].filter(Boolean),
   );
 
-  if (configService.get('NODE_ENV') === 'development') {
-    app.enableCors();
-  } else {
+  if (
+    configService.get('NODE_ENV') === 'production' &&
+    configService.getOrThrow('DISABLE_CORS') !== 'true'
+  ) {
     app.enableCors({
       origin: (
         origin: string | undefined,
