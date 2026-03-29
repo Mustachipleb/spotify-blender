@@ -49,7 +49,7 @@ export class AppController {
           client_id: this.configService.getOrThrow('SPOTIFY_CLIENT_ID'),
           scope:
             'user-read-private user-read-email user-top-read playlist-modify-public playlist-modify-private',
-          redirect_uri: this.configService.getOrThrow('AUTH_CODE_REDIRECT_URL'),
+          redirect_uri: this.configService.getOrThrow('URL') + '/callback',
           state: state,
         }),
       statusCode: 302,
@@ -93,8 +93,7 @@ export class AppController {
     await this.userRepository.save(user);
 
     const frontendUrl =
-      this.configService.get('FRONTEND_CALLBACK_URL') ||
-      'http://127.0.0.1:5173/auth/callback';
+      this.configService.getOrThrow('FRONTEND_URL') + '/auth/callback';
     const query = querystring.stringify({
       access_token: data.access_token,
       refresh_token: data.refresh_token,

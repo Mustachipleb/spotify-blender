@@ -68,7 +68,7 @@ export class SpotifyService {
     formData.append('code', code);
     formData.append(
       'redirect_uri',
-      this.configService.getOrThrow('AUTH_CODE_REDIRECT_URL'),
+      this.configService.getOrThrow('URL') + '/callback',
     );
 
     try {
