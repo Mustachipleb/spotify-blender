@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
 import { getAppConfig } from "../config";
 import type { Track } from "../types/spotify";
 import { TrackGrid } from "../components/TrackGrid";
 import { Section } from "../components/Section";
+
+export async function loader() {
+  return {
+    backendUrl: getAppConfig().BACKEND_URL,
+  };
+}
 
 export default function BlacklistPage() {
   const [blacklist, setBlacklist] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { backendUrl } = useLoaderData<typeof loader>();
 
   const fetchBlacklist = async () => {
     const token = sessionStorage.getItem("access_token");
@@ -19,7 +26,6 @@ export default function BlacklistPage() {
     }
 
     try {
-      const backendUrl = getAppConfig().BACKEND_URL;
       const response = await fetch(`${backendUrl}/blacklist`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -62,7 +68,6 @@ export default function BlacklistPage() {
     if (!token) return;
 
     try {
-      const backendUrl = getAppConfig().BACKEND_URL;
       const response = await fetch(`${backendUrl}/blacklist/${track.id}`, {
         method: "DELETE",
         headers: {

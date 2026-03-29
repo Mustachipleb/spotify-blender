@@ -1,18 +1,46 @@
-import { Link, useNavigate, useLocation } from "react-router";
+import { Link, useNavigate, useLocation, useRouteLoaderData } from "react-router";
 import { useEffect, useState } from "react";
 
 export function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const rootData = useRouteLoaderData("root") as { backendUrl: string } | undefined;
+  const backendUrl = rootData?.backendUrl;
 
   useEffect(() => {
-    setIsLoggedIn(!!sessionStorage.getItem("access_token"));
-  }, [location.pathname]);
+    const token = sessionStorage.getItem("access_token");
+    setIsLoggedIn(!!token);
+
+    if (token && backendUrl) {
+      const storedIsAdmin = sessionStorage.getItem("is_admin");
+      if (storedIsAdmin !== null) {
+        setIsAdmin(storedIsAdmin === "true");
+        return;
+      }
+
+      fetch(`${backendUrl}/admin/check`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        setIsAdmin(!!data.isAdmin);
+        sessionStorage.setItem("is_admin", String(!!data.isAdmin));
+      })
+      .catch(err => {
+        console.error("Failed to check admin status", err);
+        setIsAdmin(false);
+      });
+    } else {
+      setIsAdmin(false);
+    }
+  }, [location.pathname, backendUrl]);
 
   const handleLogout = () => {
     sessionStorage.clear();
     setIsLoggedIn(false);
+    setIsAdmin(false);
     navigate("/");
   };
 
@@ -34,6 +62,14 @@ export function Navbar() {
           >
             Blacklist
           </Link>
+          {isAdmin && (
+            <Link 
+              to="/admin" 
+              className={`font-semibold transition-colors ${location.pathname === '/admin' ? 'text-[#1DB954]' : 'text-gray-700 dark:text-gray-200 hover:text-[#1DB954]'}`}
+            >
+              Admin
+            </Link>
+          )}
         </div>
         <button
           onClick={handleLogout}

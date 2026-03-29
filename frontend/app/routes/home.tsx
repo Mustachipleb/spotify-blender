@@ -1,7 +1,13 @@
 import type { Route } from "./+types/home";
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { getAppConfig } from "../config";
+
+export async function loader() {
+  return {
+    backendUrl: getAppConfig().BACKEND_URL,
+  };
+}
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -12,6 +18,7 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { backendUrl } = useLoaderData<typeof loader>();
 
   useEffect(() => {
     setIsLoggedIn(!!sessionStorage.getItem("access_token"));
@@ -22,7 +29,7 @@ export default function Home() {
     setIsLoggedIn(false);
   };
 
-  const loginUrl = `${getAppConfig().BACKEND_URL}/login`;
+  const loginUrl = `${backendUrl}/login`;
 
   return (
     <main className="flex items-center justify-center min-h-screen">
